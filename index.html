@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C for Cake — Loyalty Rewards</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:       #0F0A06;
+  --bg2:      #1A1108;
+  --bg3:      #231810;
+  --bg4:      #2E2016;
+  --line:     rgba(255,255,255,.08);
+  --line2:    rgba(255,255,255,.14);
+  --line3:    rgba(255,255,255,.22);
+  --ink:      rgba(255,255,255,.92);
+  --ink2:     rgba(255,255,255,.62);
+  --ink3:     rgba(255,255,255,.35);
+  --ink4:     rgba(255,255,255,.18);
+  --cake:     #E05A1C;
+  --cake2:    rgba(224,90,28,.18);
+  --cake3:    rgba(224,90,28,.08);
+  --gold:     #D4A217;
+  --gold2:    rgba(212,162,23,.18);
+  --green:    #2D7A52;
+  --green2:   rgba(45,122,82,.2);
+  --r:        16px;
+  --r2:       10px;
+  --r3:       8px;
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.shell{max-width:430px;margin:0 auto;padding:0 16px 100px;min-height:100vh;position:relative}
+
+/* NAV */
+.nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 0 14px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:20px;
+  position:sticky;top:0;
+  background:var(--bg);
+  z-index:100;
+}
+.nav-brand{display:flex;flex-direction:column;gap:2px}
+.nav-title{
+  font-family:'Playfair Display',serif;
+  font-size:22px;font-weight:700;
+  color:var(--ink);letter-spacing:.01em;line-height:1
+}
+.nav-sub{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink3)}
+.nav-role{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 13px;
+  background:var(--bg3);
+  border:1px solid var(--line2);
+  border-radius:99px;
+  font-size:11px;font-weight:500;color:var(--ink2);
+  cursor:pointer;transition:all .2s;user-select:none;
+}
+.nav-role:hover{border-color:var(--line3);color:var(--ink)}
+.nav-role-dot{width:7px;height:7px;border-radius:50%;background:var(--cake);transition:background .3s}
+.nav-role.merchant .nav-role-dot{background:var(--green)}
+
+/* PANELS */
+.panel{display:none}
+.panel.active{display:block;animation:fadeUp .28s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* BOTTOM TABBAR */
+.tabbar{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  background:var(--bg2);border-top:1px solid var(--line);
+  display:flex;width:100%;max-width:430px;z-index:200;
+}
+.tab-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:4px;padding:10px 8px 14px;
+  border:none;background:transparent;cursor:pointer;
+  font-family:'Inter',sans-serif;font-size:10px;font-weight:500;
+  color:var(--ink3);transition:color .2s;letter-spacing:.06em;text-transform:uppercase
+}
+.tab-btn.active{color:var(--cake)}
+.tab-btn .tab-icon{font-size:18px;transition:transform .2s}
+.tab-btn.active .tab-icon{transform:scale(1.12)}
+
+/* CARD */
+.card{
+  background:var(--bg2);border:1px solid var(--line);
+  border-radius:var(--r);padding:16px;margin-bottom:12px;
+}
+
+/* SEC LABEL */
+.sec{font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+
+/* LOYALTY CARD */
+.loyalty-card{
+  width:100%;aspect-ratio:1.72;border-radius:var(--r);
+  background:linear-gradient(135deg,#1C0E06 0%,#2D1A0C 50%,#1C0E06 100%);
+  position:relative;overflow:hidden;margin-bottom:14px;
+  padding:18px 20px 16px;display:flex;flex-direction:column;
+  justify-content:space-between;
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 8px 40px rgba(0,0,0,.6);
+}
+.lc-grain{
+  position:absolute;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+  pointer-events:none;opacity:.4;
+}
+.lc-line{
+  position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 28px,rgba(255,255,255,.025) 28px,rgba(255,255,255,.025) 29px);
+  pointer-events:none;
+}
+.lc-wm{
+  position:absolute;right:-14px;bottom:-42px;
+  font-family:'Playfair Display',serif;font-size:190px;font-weight:700;
+  color:rgba(255,255,255,.03);line-height:1;user-select:none;pointer-events:none
+}
+.lc-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1}
+.lc-brand-name{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:rgba(255,255,255,.88)}
+.lc-brand-tag{font-size:7px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-top:4px}
+.lc-member-label{font-size:7px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.28);text-align:right}
+.lc-member-name{font-family:'Playfair Display',serif;font-size:14px;color:rgba(255,255,255,.8);text-align:right;margin-top:3px}
+
+/* STAMP DOTS */
+.lc-stamp-row{display:flex;flex-wrap:wrap;gap:7px;position:relative;z-index:1}
+.stamp-dot{
+  width:30px;height:30px;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:border-color .3s,background .3s;
+}
+.stamp-dot.filled{border-color:rgba(224,90,28,.7)}
+.stamp-dot.gift{border-color:rgba(212,162,23,.4);background:rgba(212,162,23,.06)}
+.stamp-dot.gift.filled{border-color:rgba(212,162,23,.9);background:rgba(212,162,23,.14)}
+.stamp-inner{
+  width:19px;height:19px;border-radius:50%;
+  border:2px solid rgba(224,90,28,.6);position:relative;
+  opacity:0;transition:opacity .25s;
+  display:flex;align-items:center;justify-content:center;
+}
+.stamp-inner::after{
+  content:'';width:7px;height:7px;border-radius:50%;
+  background:var(--cake);position:absolute;
+}
+.stamp-dot.filled .stamp-inner{opacity:1}
+.stamp-dot.gift .stamp-inner{border-color:rgba(212,162,23,.8)}
+.stamp-dot.gift .stamp-inner::after{background:var(--gold)}
+@keyframes inkStamp{
+  0%{transform:scale(0) rotate(-25deg);opacity:0}
+  55%{transform:scale(1.3) rotate(4deg);opacity:1}
+  78%{transform:scale(.92) rotate(-2deg)}
+  100%{transform:scale(1) rotate(0);opacity:1}
+}
+.stamp-dot.animate .stamp-inner{animation:inkStamp .45s cubic-bezier(.175,.885,.32,1.275) forwards}
+.lc-bottom{display:flex;justify-content:space-between;align-items:flex-end;position:relative;z-index:1}
+.lc-prog-wrap{flex:1;margin-right:14px}
+.lc-prog-label{font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:5px}
+.lc-prog-bar{height:2px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}
+.lc-prog-fill{height:100%;background:var(--cake);border-radius:99px;transition:width .7s cubic-bezier(.4,0,.2,1)}
+.lc-status{font-size:10px;font-weight:500;color:rgba(255,255,255,.35);letter-spacing:.02em;white-space:nowrap}
+.lc-status.glow{color:var(--gold)}
+
+/* HERO */
+.hero{
+  background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
+  padding:20px;margin-bottom:12px;position:relative;overflow:hidden;
+}
+.hero-accent{
+  position:absolute;top:0;right:0;width:120px;height:120px;
+  background:radial-gradient(circle at top right,rgba(224,90,28,.12),transparent 70%);
+  pointer-events:none;
+}
+.hero-greeting{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;position:relative;z-index:1}
+.hero-name{
+  font-family:'Playfair Display',serif;font-size:28px;font-weight:700;
+  color:var(--ink);margin-bottom:16px;position:relative;z-index:1;
+}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;position:relative;z-index:1}
+.hstat{background:var(--bg3);border:1px solid var(--line);border-radius:var(--r3);padding:10px 12px}
+.hstat-n{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--ink)}
+.hstat-l{font-size:9px;letter-spacing:.08em;color:var(--ink3);margin-top:2px;text-transform:uppercase}
+
+/* UNLOCK BANNER */
+.unlock{
+  background:var(--green2);border:1px solid rgba(45,122,82,.4);border-radius:var(--r);
+  padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:12px;
+}
+.unlock-icon{font-size:26px;flex-shrink:0}
+.unlock-title{font-size:14px;font-weight:600;color:#4fbe87}
+.unlock-sub{font-size:11px;color:rgba(79,190,135,.7);margin-top:2px}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat-box{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r2);padding:12px;text-align:center}
+.stat-n{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--ink)}
+.stat-l{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-top:3px}
+
+/* SHARE */
+.share-section{background:var(--bg3);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.share-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.share-title-txt{font-size:13px;font-weight:500;color:var(--ink)}
+.share-sub-txt{font-size:11px;color:var(--ink3);margin-top:1px}
+.share-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.share-btn{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 12px;border-radius:var(--r3);border:1px solid var(--line2);
+  background:var(--bg2);color:var(--ink2);font-size:12px;font-weight:500;
+  cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;text-decoration:none;
+}
+.share-btn:hover{border-color:var(--line3);color:var(--ink)}
+.share-btn:active{transform:scale(.97)}
+.share-btn.wa{background:#1a3d28;color:#4fbe87;border-color:#2d7a52}
+.share-btn.dark{background:var(--cake);color:#fff;border-color:var(--cake)}
+.share-btn.dark:hover{opacity:.88}
+.qr-box{margin-top:12px;padding:14px;background:var(--bg2);border-radius:var(--r3);display:none;flex-direction:column;align-items:center;gap:8px}
+.qr-box.show{display:flex}
+.qr-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+
+/* HISTORY / REDEMPTION */
+.redeem-history{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+.rh-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+.rh-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.rh-count{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--ink);line-height:1}
+.rh-count-sub{font-size:10px;color:var(--ink3)}
+.rh-row{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line)}
+.rh-row:last-child{border-bottom:none}
+.rh-left{display:flex;align-items:center;gap:8px}
+.rh-ord{background:var(--bg3);border:1px solid var(--line);border-radius:99px;padding:2px 9px;font-size:10px;color:var(--ink3)}
+.rh-action{font-size:13px;font-weight:500;color:var(--ink)}
+.rh-date{font-size:11px;color:var(--ink3)}
+
+/* TIMELINE */
+.timeline{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:12px}
+.tl-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.tl-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.tl-count{font-size:11px;color:var(--ink3);background:var(--bg3);border:1px solid var(--line);border-radius:99px;padding:2px 10px}
+.tl-item{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+.tl-item:last-child{margin-bottom:0}
+.tl-dot-col{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.tl-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.tl-dot.stamp{background:var(--bg3);border:1px solid var(--line)}
+.tl-dot.free{background:var(--green2);border:1px solid rgba(45,122,82,.4)}
+.tl-line{width:1px;background:var(--line);flex:1;min-height:8px;margin-top:3px}
+.tl-body{flex:1;padding-top:5px}
+.tl-action{font-size:13px;font-weight:500;color:var(--ink)}
+.tl-time{font-size:11px;color:var(--ink3);margin-top:2px}
+
+/* INPUT / FORM */
+input[type=text],input[type=tel],input[type=password]{
+  width:100%;padding:11px 14px;
+  border:1px solid var(--line2);border-radius:var(--r3);
+  font-size:13px;background:var(--bg3);color:var(--ink);
+  font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;
+}
+input::placeholder{color:var(--ink3)}
+input:focus{border-color:var(--line3)}
+.input-row{display:flex;gap:8px;margin-bottom:10px}
+.input-row:last-child{margin-bottom:0}
+
+/* BUTTONS */
+.btn{
+  padding:11px 18px;border-radius:var(--r3);
+  border:1px solid var(--line2);cursor:pointer;
+  font-size:13px;font-weight:500;
+  font-family:'Inter',sans-serif;
+  background:var(--bg3);color:var(--ink2);
+  transition:all .15s;white-space:nowrap;
+}
+.btn:hover{border-color:var(--line3);color:var(--ink)}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--cake);color:#fff;border-color:var(--cake)}
+.btn-primary:hover{opacity:.88;color:#fff}
+.btn-stamp{background:var(--cake);color:#fff;border-color:var(--cake);font-size:12px;padding:9px 14px}
+.btn-stamp:hover{opacity:.88}
+.btn-redeem{background:var(--green2);color:#4fbe87;border-color:rgba(45,122,82,.4);font-size:12px;padding:9px 14px}
+.btn-redeem:hover{background:rgba(45,122,82,.3)}
+
+/* MERCHANT */
+.m-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px}
+.mstat{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r2);padding:14px}
+.mstat-n{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--ink);line-height:1}
+.mstat-l{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-top:4px}
+.add-form{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:16px}
+.cust-card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:8px}
+.cust-top{display:flex;align-items:center;gap:10px}
+.avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--bg4);border:1px solid var(--line2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Playfair Display',serif;font-size:14px;font-weight:700;
+  color:var(--cake);flex-shrink:0;
+}
+.cust-info{flex:1;min-width:0}
+.cust-name{font-size:14px;font-weight:500;color:var(--ink);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.cust-sub{font-size:11px;color:var(--ink3);margin-top:2px}
+.cust-btns{display:flex;gap:6px;flex-shrink:0}
+.prog-row{display:flex;align-items:center;gap:8px;margin-top:9px}
+.prog-dots{display:flex;gap:3px;flex:1;flex-wrap:wrap}
+.pdot{width:7px;height:7px;border-radius:50%;background:var(--bg4);flex-shrink:0}
+.pdot.on{background:var(--cake)}
+.pdot.gold{background:var(--gold)}
+.prog-pct{font-size:10px;color:var(--ink3);min-width:30px;text-align:right}
+.redeem-sig{
+  display:flex;align-items:center;gap:8px;margin-top:10px;
+  padding:8px 12px;background:var(--bg3);border-radius:var(--r3);
+  font-size:12px;color:var(--ink3);border:1px solid var(--line)
+}
+.pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:500}
+.pill-green{background:var(--green2);color:#4fbe87;border:1px solid rgba(45,122,82,.3)}
+.pill-gold{background:var(--gold2);color:var(--gold);border:1px solid rgba(212,162,23,.3)}
+
+/* MISC */
+.empty{text-align:center;padding:40px 16px;color:var(--ink3);font-size:14px}
+.toast{
+  position:fixed;bottom:80px;left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--bg4);border:1px solid var(--line2);
+  color:var(--ink);padding:10px 20px;border-radius:var(--r3);
+  font-size:13px;font-weight:500;opacity:0;transition:opacity .25s,transform .25s;
+  z-index:999;pointer-events:none;white-space:nowrap;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.page-head{margin-bottom:16px}
+.page-head h2{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--ink)}
+.page-head p{font-size:13px;color:var(--ink3);margin-top:3px}
+
+/* LOADING STATE */
+.loading-bar{
+  height:2px;background:var(--bg3);border-radius:99px;overflow:hidden;margin-bottom:12px;
+}
+.loading-fill{
+  height:100%;width:40%;background:var(--cake);border-radius:99px;
+  animation:loading 1.2s ease-in-out infinite;
+}
+@keyframes loading{
+  0%{transform:translateX(-100%);width:40%}
+  50%{width:60%}
+  100%{transform:translateX(280%);width:40%}
+}
+.syncing{font-size:11px;color:var(--ink3);text-align:center;padding:8px;display:none}
+.syncing.show{display:block}
+
+/* LOGIN SCREEN */
+.login-hero{
+  background:linear-gradient(160deg,#1C1006 0%,#2A1808 60%,#1C1006 100%);
+  border:1px solid var(--line);border-radius:var(--r);
+  padding:44px 24px 40px;margin-bottom:20px;
+  position:relative;overflow:hidden;text-align:center;
+}
+.login-glow{
+  position:absolute;top:-40px;left:50%;transform:translateX(-50%);
+  width:200px;height:200px;
+  background:radial-gradient(circle,rgba(224,90,28,.18),transparent 70%);
+  pointer-events:none;
+}
+.login-wm{
+  position:absolute;right:-16px;bottom:-44px;
+  font-family:'Playfair Display',serif;font-size:210px;font-weight:700;
+  color:rgba(255,255,255,.025);line-height:1;user-select:none;
+}
+.login-greeting{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;position:relative;z-index:1}
+.login-brand{
+  font-family:'Playfair Display',serif;font-size:40px;font-weight:700;
+  color:var(--ink);line-height:1;margin-bottom:8px;position:relative;z-index:1;
+}
+.login-brand span{color:var(--cake)}
+.login-tagline{font-size:12px;color:var(--ink3);position:relative;z-index:1;letter-spacing:.04em}
+.login-form{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.login-note{font-size:11px;color:var(--ink3);text-align:center;margin-top:12px;line-height:1.6}
+.login-hint{font-size:12px;color:var(--cake);min-height:16px;margin:4px 0 2px}
+.login-divider{display:flex;align-items:center;gap:10px;margin:14px 0}
+.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--line)}
+.login-divider span{font-size:11px;color:var(--ink3)}
+
+/* SIGNED IN BAR */
+.signed-bar{
+  background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 16px;margin-bottom:12px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.signed-name-label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-bottom:2px}
+.signed-name{font-size:15px;font-weight:500;color:var(--ink)}
+.merchant-lock{
+  display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink3);
+  cursor:pointer;padding:6px 0;margin-bottom:14px;border:none;background:none;
+  font-family:'Inter',sans-serif;transition:color .2s;
+}
+.merchant-lock:hover{color:var(--ink)}
+
+/* PIN MODAL */
+.pin-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);
+  backdrop-filter:blur(6px);z-index:500;
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.pin-overlay.show{opacity:1;pointer-events:all}
+.pin-modal{
+  background:var(--bg2);border:1px solid var(--line2);
+  border-radius:var(--r);padding:28px 24px 24px;
+  width:100%;max-width:300px;
+  box-shadow:0 24px 80px rgba(0,0,0,.7);
+  transform:translateY(12px);transition:transform .2s;text-align:center;
+}
+.pin-overlay.show .pin-modal{transform:translateY(0)}
+.pin-icon{font-size:28px;margin-bottom:12px}
+.pin-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.pin-sub{font-size:12px;color:var(--ink3);margin-bottom:20px}
+.pin-dots{display:flex;justify-content:center;gap:10px;margin-bottom:20px}
+.pin-dot{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--line2);background:transparent;transition:all .15s}
+.pin-dot.filled{background:var(--cake);border-color:var(--cake)}
+.pin-dot.error{background:#e05a1c;border-color:#e05a1c;animation:shake .3s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.pin-key{
+  padding:13px 0;border-radius:var(--r3);border:1px solid var(--line2);
+  background:var(--bg3);font-size:17px;font-weight:500;color:var(--ink);
+  cursor:pointer;font-family:'Inter',sans-serif;transition:all .1s;user-select:none;
+}
+.pin-key:active{transform:scale(.92);background:var(--bg4)}
+.pin-key.del{font-size:13px;color:var(--ink3)}
+.pin-cancel{font-size:12px;color:var(--ink3);cursor:pointer;margin-top:8px;display:block;transition:color .15s}
+.pin-cancel:hover{color:var(--ink)}
+.pin-error-msg{font-size:12px;color:var(--cake);min-height:16px;margin-bottom:8px}
+.pin-hint{font-size:11px;color:var(--ink3);margin-top:8px}
+
+/* SEARCH BAR */
+.search-wrap{position:relative;margin-bottom:10px}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.4;pointer-events:none}
+.search-input{
+  width:100%;padding:10px 36px 10px 36px;
+  border:1px solid var(--line2);border-radius:var(--r3);
+  font-size:13px;background:var(--bg3);color:var(--ink);
+  font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;
+}
+.search-input::placeholder{color:var(--ink3)}
+.search-input:focus{border-color:var(--line3)}
+.search-clear{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  background:var(--bg4);border:none;border-radius:50%;
+  width:20px;height:20px;display:none;align-items:center;justify-content:center;
+  font-size:11px;color:var(--ink3);cursor:pointer;line-height:1;
+}
+.search-clear.show{display:flex}
+.search-clear:hover{color:var(--ink)}
+.search-count{font-size:11px;color:var(--ink3);margin-bottom:8px}
+
+/* SUPABASE STATUS */
+.db-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink3);padding:3px 8px;border-radius:99px;
+  border:1px solid var(--line);background:var(--bg3);margin-left:8px;
+  vertical-align:middle;
+}
+.db-badge .dot{width:5px;height:5px;border-radius:50%;background:var(--ink3)}
+.db-badge.connected .dot{background:#4fbe87}
+.db-badge.error .dot{background:var(--cake)}
+
+/* WHATSAPP NOTIFICATION MODAL */
+.wa-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);
+  backdrop-filter:blur(6px);z-index:600;
+  display:flex;align-items:flex-end;justify-content:center;padding:0;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.wa-overlay.show{opacity:1;pointer-events:all}
+.wa-sheet{
+  background:var(--bg2);border:1px solid var(--line2);
+  border-radius:var(--r) var(--r) 0 0;padding:24px 20px 32px;
+  width:100%;max-width:430px;
+  box-shadow:0 -8px 60px rgba(0,0,0,.7);
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+.wa-overlay.show .wa-sheet{transform:translateY(0)}
+.wa-handle{width:36px;height:3px;background:var(--line3);border-radius:99px;margin:0 auto 20px;opacity:.5}
+.wa-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.wa-icon-wrap{width:44px;height:44px;border-radius:50%;background:#1a3d28;border:1px solid #2d7a52;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.wa-head-info{}
+.wa-head-title{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.wa-head-sub{font-size:11px;color:var(--ink3)}
+.wa-preview{
+  background:var(--bg3);border:1px solid var(--line);border-radius:var(--r2);
+  padding:13px 14px;margin-bottom:16px;font-size:13px;color:var(--ink2);
+  line-height:1.6;position:relative;
+}
+.wa-preview::before{content:'💬';position:absolute;top:-9px;left:14px;font-size:14px;background:var(--bg3);padding:0 4px;border-radius:4px}
+.wa-phone-row{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.wa-phone-label{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
+.wa-phone-input{
+  flex:1;padding:10px 12px;border:1px solid var(--line2);border-radius:var(--r3);
+  font-size:13px;background:var(--bg3);color:var(--ink);
+  font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;
+}
+.wa-phone-input:focus{border-color:#2d7a52}
+.wa-phone-input::placeholder{color:var(--ink3)}
+.wa-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wa-btn{
+  padding:12px;border-radius:var(--r3);border:1px solid var(--line2);
+  background:var(--bg3);color:var(--ink2);font-size:13px;font-weight:500;
+  cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;
+  text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.wa-btn:hover{border-color:var(--line3);color:var(--ink)}
+.wa-btn:active{transform:scale(.97)}
+.wa-btn.primary{background:#1a3d28;color:#4fbe87;border-color:#2d7a52;font-weight:600}
+.wa-btn.primary:hover{background:#22502e}
+.wa-note{text-align:center;font-size:10px;color:var(--ink3);margin-top:12px;line-height:1.5}
+
+/* WA QUICK BUTTON ON CUSTOMER CARD */
+.cust-actions-row{
+  margin-top:8px;padding-top:8px;
+  border-top:1px solid var(--line);
+}
+.wa-quick-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 12px;border-radius:var(--r3);
+  border:1px solid #2d7a52;background:#1a3d2855;
+  color:#4fbe87;font-size:11px;font-weight:500;
+  cursor:pointer;font-family:'Inter',sans-serif;
+  transition:all .15s;
+}
+.wa-quick-btn:hover{background:#1a3d28;border-color:#3a9966}
+.wa-quick-btn:active{transform:scale(.97)}
+.wa-quick-disabled{
+  border-color:var(--line) !important;
+  background:transparent !important;
+  color:var(--ink3) !important;
+  cursor:default !important;
+  opacity:.55;
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- NAV -->
+  <div class="nav">
+    <div class="nav-brand">
+      <div class="nav-title">C for Cake <span class="db-badge" id="db-badge"><span class="dot"></span><span id="db-label">local</span></span></div>
+      <div class="nav-sub">Loyalty Rewards</div>
+    </div>
+    <div class="nav-role" id="role-toggle" onclick="toggleRole()">
+      <div class="nav-role-dot"></div>
+      <span id="role-label">Customer</span>
+    </div>
+  </div>
+
+  <!-- LOGIN SCREEN -->
+  <div class="panel active" id="panel-login">
+    <div class="login-hero">
+      <div class="login-glow"></div>
+      <div class="login-wm">C</div>
+      <div class="login-greeting">Welcome to</div>
+      <div class="login-brand"><span>C</span> for Cake</div>
+      <div class="login-tagline">Your personal loyalty rewards card</div>
+    </div>
+    <div class="login-form">
+      <div class="sec" style="margin-bottom:8px">Your first name</div>
+      <input type="text" id="login-name" placeholder="Enter your first name" autocomplete="off" oninput="loginHint()"/>
+      <div class="login-hint" id="login-hint"></div>
+      <div class="sec" style="margin-bottom:8px;margin-top:12px">Last 4 digits of your phone <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--ink3)">(required for verification)</span></div>
+      <input type="tel" id="login-phone" placeholder="e.g. 7890" maxlength="10" autocomplete="off" style="margin-bottom:16px"/>
+      <button class="btn btn-primary" style="width:100%;padding:13px;font-size:14px" onclick="customerLogin()">View my card →</button>
+      <div class="login-note">🔒 Both your name and last 4 digits must match. Only your card is visible.</div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER PANEL (after login) -->
+  <div class="panel" id="panel-customer">
+    <div class="signed-bar">
+      <div>
+        <div class="signed-name-label">Signed in as</div>
+        <div class="signed-name" id="logged-in-name"></div>
+      </div>
+      <button class="btn" style="padding:8px 14px;font-size:12px" onclick="customerLogout()">Sign out</button>
+    </div>
+    <div class="syncing" id="syncing">Syncing with database…</div>
+    <div id="card-area"><div class="empty">Loading your card…</div></div>
+  </div>
+
+  <!-- MERCHANT PANEL -->
+  <div class="panel" id="panel-merchant">
+    <div class="page-head">
+      <h2>Merchant Counter</h2>
+      <p>Add customers · give stamps · redeem free cakes</p>
+    </div>
+    <button class="merchant-lock" onclick="lockMerchant()">🔒 Lock & return to customer view</button>
+    <div class="syncing" id="m-syncing">Syncing…</div>
+    <div id="m-stats" class="m-stats"></div>
+    <div class="sec">Add new customer</div>
+    <div class="add-form">
+      <div class="input-row">
+        <input type="text" id="inp-name" placeholder="Customer full name"/>
+      </div>
+      <div class="input-row">
+        <input type="tel" id="inp-phone" placeholder="Phone number (optional)"/>
+        <button class="btn btn-primary" onclick="addCustomer()">Add</button>
+      </div>
+    </div>
+    <div class="sec">All customers</div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" type="text" id="m-search"
+        placeholder="Search by name or phone…"
+        oninput="filterCustomers()" autocomplete="off"/>
+      <button class="search-clear" id="search-clear" onclick="clearSearch()">✕</button>
+    </div>
+    <div class="search-count" id="search-count"></div>
+    <div id="m-list"></div>
+  </div>
+
+</div>
+
+<!-- TABBAR -->
+<div class="tabbar" style="display:none">
+  <button class="tab-btn active" id="tab-card" onclick="showTab('card')">
+    <span class="tab-icon">🎂</span>My Card
+  </button>
+  <button class="tab-btn" id="tab-redeem" onclick="showTab('redeem')">
+    <span class="tab-icon">🎁</span>Rewards
+  </button>
+  <button class="tab-btn" id="tab-history" onclick="showTab('history')">
+    <span class="tab-icon">📋</span>History
+  </button>
+</div>
+
+<!-- PIN MODAL -->
+<div class="pin-overlay" id="pin-overlay" onclick="handleOverlayClick(event)">
+  <div class="pin-modal">
+    <div class="pin-icon">🔐</div>
+    <div class="pin-title">Merchant Access</div>
+    <div class="pin-sub">Enter your 4-digit PIN</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-error-msg" id="pin-error"></div>
+    <div class="pin-grid">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key" onclick="pinKey('0')" style="grid-column:2">0</button>
+      <button class="pin-key del" onclick="pinDel()">⌫</button>
+    </div>
+    <div class="pin-hint">Enter your merchant PIN</div>
+    <span class="pin-cancel" onclick="closePIN()">Cancel</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- WHATSAPP NOTIFICATION SHEET -->
+<div class="wa-overlay" id="wa-overlay" onclick="handleWAOverlayClick(event)">
+  <div class="wa-sheet">
+    <div class="wa-handle"></div>
+    <div class="wa-header">
+      <div class="wa-icon-wrap">💬</div>
+      <div class="wa-head-info">
+        <div class="wa-head-title" id="wa-title">Stamp Notification</div>
+        <div class="wa-head-sub">Send a WhatsApp message to the customer</div>
+      </div>
+    </div>
+    <div class="wa-phone-label">Customer WhatsApp number</div>
+    <div class="wa-phone-row">
+      <input class="wa-phone-input" type="tel" id="wa-phone-inp" placeholder="+91 98765 43210"/>
+    </div>
+    <div class="wa-preview" id="wa-preview-text">Loading message…</div>
+    <div class="wa-btns">
+      <button class="wa-btn" onclick="closeWA()">Skip</button>
+      <a class="wa-btn primary" id="wa-send-link" href="#" target="_blank" onclick="closeWA()">Send on WhatsApp →</a>
+    </div>
+    <div class="wa-note">Opens WhatsApp with the message pre-filled · One tap to send · 100% free</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   SUPABASE CONFIG — replace with your own values
+   Get these from: supabase.com → your project →
+   Settings → API
+   ═══════════════════════════════════════════════ */
+const SUPABASE_URL  = 'https://rrwwrrwivopbnvtqlnmx.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyd3dycndpdm9wYm52dHFsbm14Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MzQ4MjAsImV4cCI6MjA5MzMxMDgyMH0.yL7dk7OzR_ybvGOeqDu-HmEeNUmRmpJ5KS_AXYqYtSU';
+
+const USE_SUPABASE = SUPABASE_URL !== 'YOUR_SUPABASE_URL';
+
+/* ── CONSTANTS ────────────────────────────────── */
+const STAMPS = 11;
+const MERCHANT_PIN = '5525'; // ← Merchant PIN
+const SK = 'cfc_prod_v3';    // localStorage fallback key
+
+/* ── STATE ───────────────────────────────────── */
+let db = [];
+let currentCustomer = null;
+let currentTab = 'card';
+let isMerchant = false;
+
+/* ═══════════════════════════════════════════════
+   SUPABASE REST HELPERS — no library needed
+   ═══════════════════════════════════════════════ */
+const SB_HEADERS = {
+  'Content-Type':  'application/json',
+  'apikey':        SUPABASE_ANON,
+  'Authorization': 'Bearer ' + SUPABASE_ANON,
+  'Prefer':        'return=minimal'
+};
+const SB_REST = SUPABASE_URL + '/rest/v1/customers';
+
+async function sbFetch(url, opts = {}) {
+  const res = await fetch(url, {
+    ...opts,
+    headers: { ...SB_HEADERS, ...(opts.headers || {}) }
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(res.status + ': ' + txt);
+  }
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+async function initSupabase() {
+  if (!USE_SUPABASE) { setBadge('local', false); return; }
+  try {
+    await loadFromSupabase();
+    setBadge('live', true);
+    // Poll for changes every 8 seconds (simple real-time alternative)
+    setInterval(() => loadFromSupabase(true), 8000);
+  } catch(e) {
+    console.warn('Supabase unavailable, using local storage:', e);
+    setBadge('local', false);
+    loadLocal();
+  }
+}
+
+function setBadge(label, connected) {
+  const b = document.getElementById('db-badge');
+  const l = document.getElementById('db-label');
+  l.textContent = label;
+  b.className = 'db-badge' + (connected ? ' connected' : '');
+}
+
+/* ── SUPABASE DB OPERATIONS ─────────────────── */
+async function loadFromSupabase(silent = false) {
+  if (!USE_SUPABASE) return;
+  if (!silent) showSyncing(true);
+  try {
+    const data = await sbFetch(SB_REST + '?order=created_at.asc', { method: 'GET' });
+    db = (data || []).map(row => ({
+      id:          row.id,
+      name:        row.name,
+      phone:       row.phone || '',
+      stamps:      row.stamps || 0,
+      pendingFree: row.pending_free || 0,
+      totalFree:   row.total_free || 0,
+      joined:      row.joined || dateShort(),
+      history:     row.history || [],
+    }));
+    if (isMerchant) renderMerchant();
+    if (currentCustomer) {
+      const fresh = db.find(x => x.id === currentCustomer.id);
+      if (fresh) { currentCustomer = fresh; loadCard(); }
+    }
+  } catch(e) {
+    console.error('Load error:', e);
+    setBadge('error', false);
+  } finally {
+    showSyncing(false);
+  }
+}
+
+async function saveCustomer(c) {
+  if (!USE_SUPABASE) { saveLocal(); return; }
+  showSyncing(true);
+  try {
+    const row = {
+      id:           c.id,
+      name:         c.name,
+      phone:        c.phone || null,
+      stamps:       c.stamps,
+      pending_free: c.pendingFree,
+      total_free:   c.totalFree,
+      joined:       c.joined,
+      history:      c.history,
+    };
+    await sbFetch(SB_REST, {
+      method:  'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body:    JSON.stringify(row)
+    });
+  } catch(e) {
+    console.error('Save error:', e);
+    toast('Sync error — saved locally');
+    saveLocal();
+  } finally {
+    showSyncing(false);
+  }
+}
+
+async function deleteCustomer(id) {
+  if (!USE_SUPABASE) { saveLocal(); return; }
+  try {
+    await sbFetch(SB_REST + '?id=eq.' + id, { method: 'DELETE' });
+  } catch(e) { console.error(e); }
+}
+
+/* ── LOCAL STORAGE FALLBACK ─────────────────── */
+function loadLocal() {
+  try { db = JSON.parse(localStorage.getItem(SK) || '[]'); } catch(e) { db = []; }
+}
+function saveLocal() {
+  try { localStorage.setItem(SK, JSON.stringify(db)); } catch(e) {}
+}
+function saveDB(c) {
+  if (USE_SUPABASE) saveCustomer(c);
+  else saveLocal();
+}
+
+function showSyncing(on) {
+  document.getElementById('syncing').classList.toggle('show', on);
+  document.getElementById('m-syncing').classList.toggle('show', on);
+}
+
+/* ── UTILS ───────────────────────────────────── */
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function uid()  { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function initials(n) { return n.trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function fmtFull(ts) { return new Date(ts).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function fmtDate(ts) { return new Date(ts).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }
+function dateShort()  { return new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }
+function ordinal(n) { const s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+function toast(msg, ms=2400) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), ms);
+}
+
+/* ── PIN LOGIC ───────────────────────────────── */
+let pinBuffer = '';
+
+function openPIN() {
+  pinBuffer = '';
+  document.getElementById('pin-error').textContent = '';
+  updatePinDots('');
+  document.getElementById('pin-overlay').classList.add('show');
+}
+function closePIN() {
+  document.getElementById('pin-overlay').classList.remove('show');
+  pinBuffer = '';
+  updatePinDots('');
+}
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('pin-overlay')) closePIN();
+}
+function updatePinDots(buf, isError) {
+  for (let i=0; i<4; i++) {
+    const d = document.getElementById('pd'+i);
+    d.className = 'pin-dot';
+    if (isError) d.classList.add('error');
+    else if (i < buf.length) d.classList.add('filled');
+  }
+}
+function pinKey(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDots(pinBuffer);
+  if (pinBuffer.length === 4) {
+    setTimeout(() => {
+      if (pinBuffer === MERCHANT_PIN) {
+        closePIN(); enterMerchantMode();
+      } else {
+        updatePinDots(pinBuffer, true);
+        document.getElementById('pin-error').textContent = 'Incorrect PIN — try again';
+        setTimeout(() => { pinBuffer = ''; updatePinDots(''); document.getElementById('pin-error').textContent = ''; }, 1000);
+      }
+    }, 120);
+  }
+}
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0,-1);
+  updatePinDots(pinBuffer);
+  document.getElementById('pin-error').textContent = '';
+}
+
+/* ── ROLE TOGGLE ─────────────────────────────── */
+function toggleRole() {
+  isMerchant ? lockMerchant() : openPIN();
+}
+function enterMerchantMode() {
+  isMerchant = true;
+  document.getElementById('role-label').textContent = 'Merchant';
+  document.getElementById('role-toggle').classList.add('merchant');
+  document.getElementById('panel-login').classList.remove('active');
+  document.getElementById('panel-customer').classList.remove('active');
+  document.getElementById('panel-merchant').classList.add('active');
+  document.querySelector('.tabbar').style.display = 'none';
+  renderMerchant();
+}
+function lockMerchant() {
+  isMerchant = false;
+  document.getElementById('role-label').textContent = 'Customer';
+  document.getElementById('role-toggle').classList.remove('merchant');
+  document.getElementById('panel-merchant').classList.remove('active');
+  if (currentCustomer) {
+    document.getElementById('panel-customer').classList.add('active');
+    document.querySelector('.tabbar').style.display = 'flex';
+    showTab(currentTab);
+  } else {
+    document.getElementById('panel-login').classList.add('active');
+  }
+}
+
+/* ── CUSTOMER LOGIN ──────────────────────────── */
+function loginHint() {
+  const nameVal  = document.getElementById('login-name').value.trim().toLowerCase();
+  const phoneVal = document.getElementById('login-phone').value.trim();
+  const hint = document.getElementById('login-hint');
+  if (!nameVal || nameVal.length < 2) { hint.textContent = ''; return; }
+  // Just check if first name exists at all (don't reveal phone match here)
+  const firstName = nameVal.split(/\s+/)[0];
+  const nameFound = db.find(c => c.name.toLowerCase().split(/\s+/)[0] === firstName);
+  hint.textContent = nameFound ? '' : 'First name not found — ask the merchant to add you first.';
+}
+
+// Strict login: first name match + last 4 digits of phone match (both required)
+function findCustomer(nameVal, phoneVal) {
+  const firstName = nameVal.trim().toLowerCase().split(/\s+/)[0];
+  const p = phoneVal.replace(/\D/g,'');
+  const entered4 = p.slice(-4);
+
+  // Both fields required
+  if (!firstName || entered4.length < 4) return null;
+
+  // First name must match AND last 4 of phone must match
+  return db.find(c => {
+    const custFirst = c.name.toLowerCase().split(/\s+/)[0];
+    const custPhone4 = c.phone ? c.phone.replace(/\D/g,'').slice(-4) : '';
+    return custFirst === firstName && custPhone4 === entered4;
+  }) || null;
+}
+
+function customerLogin() {
+  const nameVal  = document.getElementById('login-name').value.trim();
+  const phoneVal = document.getElementById('login-phone').value.trim();
+  const p = phoneVal.replace(/\D/g,'');
+
+  if (!nameVal) { toast('Enter your first name'); return; }
+  if (p.length < 4) { toast('Enter the last 4 digits of your phone number'); return; }
+
+  const match = findCustomer(nameVal, phoneVal);
+  if (!match) {
+    toast('Name or phone digits don\'t match — please check and try again');
+    return;
+  }
+
+  currentCustomer = match;
+  document.getElementById('logged-in-name').textContent = match.name;
+  document.getElementById('panel-login').classList.remove('active');
+  document.getElementById('panel-customer').classList.add('active');
+  document.querySelector('.tabbar').style.display = 'flex';
+  showTab('card');
+  toast('Welcome back, ' + match.name.split(' ')[0] + '! 🎂');
+}
+
+function customerLogout() {
+  currentCustomer = null;
+  document.getElementById('login-name').value = '';
+  document.getElementById('login-phone').value = '';
+  document.getElementById('login-hint').textContent = '';
+  document.getElementById('panel-customer').classList.remove('active');
+  document.getElementById('panel-login').classList.add('active');
+  document.querySelector('.tabbar').style.display = 'none';
+  document.getElementById('card-area').innerHTML = '';
+}
+
+/* ── TABS ────────────────────────────────────── */
+function showTab(tab) {
+  currentTab = tab;
+  ['card','redeem','history'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+  });
+  loadCard(null, tab);
+}
+
+/* ── MERCHANT ────────────────────────────────── */
+let searchQuery = '';
+
+function filterCustomers() {
+  searchQuery = document.getElementById('m-search').value.trim();
+  document.getElementById('search-clear').classList.toggle('show', searchQuery.length > 0);
+  renderCustomerList();
+}
+
+function clearSearch() {
+  document.getElementById('m-search').value = '';
+  searchQuery = '';
+  document.getElementById('search-clear').classList.remove('show');
+  document.getElementById('search-count').textContent = '';
+  renderCustomerList();
+}
+
+function renderMerchant() {
+  const total   = db.length;
+  const stamps  = db.reduce((a,c)=>a+c.stamps,0);
+  const free    = db.reduce((a,c)=>a+c.totalFree,0);
+  const pending = db.reduce((a,c)=>a+(c.pendingFree||0),0);
+  document.getElementById('m-stats').innerHTML = `
+    <div class="mstat"><div class="mstat-n">${total}</div><div class="mstat-l">Customers</div></div>
+    <div class="mstat"><div class="mstat-n">${stamps}</div><div class="mstat-l">Stamps given</div></div>
+    <div class="mstat"><div class="mstat-n">${free}</div><div class="mstat-l">Free earned</div></div>
+    <div class="mstat"><div class="mstat-n">${pending}</div><div class="mstat-l">Pending redeem</div></div>`;
+  renderCustomerList();
+}
+
+function renderCustomerList() {
+  const el = document.getElementById('m-list');
+  const countEl = document.getElementById('search-count');
+
+  if (!db.length) {
+    el.innerHTML = '<div class="empty">No customers yet — add one above</div>';
+    countEl.textContent = '';
+    return;
+  }
+
+  // Apply search filter
+  const q = searchQuery.toLowerCase();
+  const list = q ? db.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    (c.phone && c.phone.replace(/\D/g,'').includes(q.replace(/\D/g,'')))
+  ) : db;
+
+  // Show count only when searching
+  countEl.textContent = q
+    ? (list.length ? `${list.length} of ${db.length} customers` : 'No customers found')
+    : '';
+
+  if (!list.length) {
+    el.innerHTML = '<div class="empty">No customers match your search</div>';
+    return;
+  }
+
+  el.innerHTML = list.map(c => {
+    const cur = c.stamps % STAMPS;
+    const hasFree = c.pendingFree > 0;
+    const redeemEvents = (c.history||[]).filter(h=>h.type==='free');
+    const lastRd = redeemEvents.length ? redeemEvents[redeemEvents.length-1] : null;
+    let dots = '';
+    for (let i=0;i<STAMPS;i++) {
+      const on=i<cur, isGift=i===STAMPS-1;
+      dots += `<div class="pdot ${on?(isGift?'gold':'on'):''}"></div>`;
+    }
+    const sig = c.totalFree > 0 ? `<div class="redeem-sig">
+      🎁 Redeemed free cake <strong style="color:var(--ink);margin:0 2px">${c.totalFree} time${c.totalFree>1?'s':''}</strong>
+      ${lastRd ? '· Last: '+fmtDate(lastRd.ts) : ''}
+    </div>` : '';
+    return `<div class="cust-card">
+      <div class="cust-top">
+        <div class="avatar">${initials(c.name)}</div>
+        <div class="cust-info">
+          <div class="cust-name">
+            ${esc(c.name)}
+            ${hasFree ? `<span class="pill pill-green">🎁 ready</span>` : ''}
+            ${c.totalFree>0 ? `<span class="pill pill-gold">🏅 ${c.totalFree}×</span>` : ''}
+          </div>
+          <div class="cust-sub">${c.phone||'No phone'} · ${c.stamps} purchases · Since ${c.joined}</div>
+          <div class="prog-row"><div class="prog-dots">${dots}</div><div class="prog-pct">${cur}/${STAMPS}</div></div>
+        </div>
+        <div class="cust-btns">
+          ${hasFree ? `<button class="btn btn-redeem" onclick="redeemCake('${c.id}')">Redeem</button>` : ''}
+          <button class="btn btn-stamp" onclick="giveStamp('${c.id}')">+ Stamp</button>
+        </div>
+      </div>
+      <div class="cust-actions-row">
+        <button class="wa-quick-btn ${c.phone ? '' : 'wa-quick-disabled'}" onclick="openWAQuick('${c.id}')" ${c.phone ? '' : 'title="No phone number saved"'}>
+          <span>💬</span> WhatsApp${c.phone ? '' : ' (no number)'}
+        </button>
+      </div>${sig}
+    </div>`;
+  }).join('');
+}
+
+async function addCustomer() {
+  const name = document.getElementById('inp-name').value.trim();
+  if (!name) { toast('Enter a customer name'); return; }
+  const phone = document.getElementById('inp-phone').value.trim();
+  if (db.find(c => c.name.toLowerCase() === name.toLowerCase())) { toast('Customer already exists'); return; }
+  const newC = { id: uid(), name, phone, stamps:0, pendingFree:0, totalFree:0, joined:dateShort(), history:[] };
+  db.push(newC);
+  await saveDB(newC);
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-phone').value = '';
+  renderMerchant();
+  toast('Added: ' + name);
+}
+
+async function giveStamp(id) {
+  const c = db.find(x=>x.id===id);
+  if (!c) return;
+  const prevCur = c.stamps % STAMPS;
+  c.stamps++;
+  c.history.push({ type:'stamp', ts:Date.now() });
+  const newCur = c.stamps % STAMPS;
+  const earnedFree = (newCur === 0);
+  if (earnedFree) { c.pendingFree++; c.totalFree++; }
+  await saveDB(c);
+  renderMerchant();
+  if (earnedFree) toast('🎉 ' + c.name + ' earned a FREE CAKE!', 3200);
+  else toast('Stamped! ' + (STAMPS - newCur) + ' more to go');
+  if (!isMerchant && currentCustomer && currentCustomer.id === id) loadCard(prevCur);
+  // Show WhatsApp notification prompt
+  const firstName = c.name.split(' ')[0];
+  let msg;
+  if (earnedFree) {
+    msg = `🎉 Congratulations ${c.name}!\n\nYou've collected all ${STAMPS} stamps on your C for Cake loyalty card and earned a *FREE CAKE* 🎂🎁\n\nCome visit us and claim your reward at the counter. We can't wait to see you!\n\n— C for Cake 🍰`;
+  } else {
+    const cur = c.stamps % STAMPS === 0 ? STAMPS : c.stamps % STAMPS;
+    const rem = STAMPS - (c.stamps % STAMPS);
+    msg = `Hi ${firstName}! 🎂\n\nYou just earned a new stamp at *C for Cake*!\n\nYour card: ${cur}/${STAMPS} stamps collected.\nJust *${rem} more stamp${rem!==1?'s':''}* until your FREE cake! 🎁\n\nThank you for your purchase — see you soon!\n— C for Cake 🍰`;
+  }
+  openWAModal(c, earnedFree ? '🎉 Free Cake Unlocked!' : '🎂 New Stamp Added', msg);
+}
+
+async function redeemCake(id) {
+  const c = db.find(x=>x.id===id);
+  if (!c || !c.pendingFree) return;
+  c.pendingFree--;
+  c.history.push({ type:'free', ts:Date.now() });
+  await saveDB(c);
+  renderMerchant();
+  toast('🎁 ' + ordinal(c.totalFree) + ' free cake redeemed for ' + c.name);
+  if (!isMerchant && currentCustomer && currentCustomer.id === id) loadCard();
+  // WhatsApp confirmation
+  const firstName = c.name.split(' ')[0];
+  const msg = `Hi ${firstName}! 🎁\n\nYour free cake has been redeemed at *C for Cake* — enjoy every bite! 🎂\n\nKeep collecting stamps for your next reward. See you again soon!\n— C for Cake 🍰`;
+  openWAModal(c, '🎁 Free Cake Redeemed', msg);
+}
+
+/* ── CUSTOMER CARD ───────────────────────────── */
+function loadCard(newStampIdx=null, tab=currentTab) {
+  const area = document.getElementById('card-area');
+  const c = currentCustomer ? db.find(x=>x.id===currentCustomer.id) : null;
+  if (!c) { area.innerHTML = '<div class="empty">Please sign in to see your card</div>'; return; }
+  currentCustomer = c;
+  if (tab==='card')    renderTabCard(c, area, newStampIdx);
+  if (tab==='redeem')  renderTabRedeem(c, area);
+  if (tab==='history') renderTabHistory(c, area);
+}
+
+function renderTabCard(c, area, newStampIdx) {
+  const cur = c.stamps % STAMPS;
+  const pct = Math.round(cur/STAMPS*100);
+  const rem = STAMPS - cur;
+  let dots = '';
+  for (let i=0; i<STAMPS; i++) {
+    const filled=i<cur, isGift=i===STAMPS-1, isNew=(newStampIdx!==null&&i===newStampIdx);
+    let cls='stamp-dot';
+    if (filled) cls+=' filled';
+    if (isGift)  cls+=' gift';
+    if (isNew)   cls+=' animate';
+    dots += `<div class="${cls}"><div class="stamp-inner"></div></div>`;
+  }
+  const statusTxt = rem===0 ? 'FREE CAKE UNLOCKED!' : rem+' more to free cake';
+  const pendingBanner = c.pendingFree > 0 ? `<div class="unlock">
+    <div class="unlock-icon">🎉</div>
+    <div>
+      <div class="unlock-title">Free cake ready!</div>
+      <div class="unlock-sub">${c.pendingFree} cake${c.pendingFree>1?'s':''} — show this to the counter</div>
+    </div>
+  </div>` : '';
+  const waText = encodeURIComponent(`🎂 I'm ${cur}/${STAMPS} stamps on my C for Cake loyalty card! ${c.totalFree} free cakes earned so far.`);
+  area.innerHTML = `
+    <div class="hero">
+      <div class="hero-accent"></div>
+      <div class="hero-greeting">Welcome back</div>
+      <div class="hero-name">${esc(c.name)}</div>
+      <div class="hero-stats">
+        <div class="hstat"><div class="hstat-n">${c.stamps}</div><div class="hstat-l">Purchases</div></div>
+        <div class="hstat"><div class="hstat-n">${c.totalFree}</div><div class="hstat-l">Free cakes</div></div>
+        <div class="hstat"><div class="hstat-n">${rem===0?'🎁':rem}</div><div class="hstat-l">${rem===0?'Claim!':'To go'}</div></div>
+      </div>
+    </div>
+    ${pendingBanner}
+    <div class="loyalty-card">
+      <div class="lc-grain"></div>
+      <div class="lc-line"></div>
+      <div class="lc-wm">C</div>
+      <div class="lc-top">
+        <div><div class="lc-brand-name">C for Cake</div><div class="lc-brand-tag">Loyalty Card</div></div>
+        <div><div class="lc-member-label">Member</div><div class="lc-member-name">${esc(c.name)}</div></div>
+      </div>
+      <div class="lc-stamp-row">${dots}</div>
+      <div class="lc-bottom">
+        <div class="lc-prog-wrap">
+          <div class="lc-prog-label">${cur} of ${STAMPS} stamps</div>
+          <div class="lc-prog-bar"><div class="lc-prog-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="lc-status ${rem===0?'glow':''}">${statusTxt}</div>
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-n">${c.stamps}</div><div class="stat-l">Purchases</div></div>
+      <div class="stat-box"><div class="stat-n">${c.totalFree}</div><div class="stat-l">Free cakes</div></div>
+      <div class="stat-box"><div class="stat-n">${rem===0?'🎁':rem}</div><div class="stat-l">Stamps left</div></div>
+    </div>
+    <div class="share-section">
+      <div class="share-header">
+        <div style="font-size:18px">📲</div>
+        <div><div class="share-title-txt">Share your card</div><div class="share-sub-txt">Show your progress or share on WhatsApp</div></div>
+      </div>
+      <div class="share-btns">
+        <button class="share-btn dark" onclick="printCard('${c.id}')">🖨️ Download card</button>
+        <a class="share-btn wa" href="https://wa.me/?text=${waText}" target="_blank">💬 WhatsApp</a>
+        <button class="share-btn" onclick="copyProgress('${c.id}')">📋 Copy status</button>
+        <button class="share-btn" onclick="toggleQR('${c.id}')">📷 QR code</button>
+      </div>
+      <div class="qr-box" id="qr-box-${c.id}">
+        <div id="qr-render-${c.id}"></div>
+        <div class="qr-label">Scan to show your card</div>
+      </div>
+    </div>`;
+}
+
+function renderTabRedeem(c, area) {
+  const redeemEvents = (c.history||[]).filter(h=>h.type==='free');
+  const pendingBanner = c.pendingFree > 0 ? `<div class="unlock">
+    <div class="unlock-icon">🎉</div>
+    <div>
+      <div class="unlock-title">You have ${c.pendingFree} free cake${c.pendingFree>1?'s':''} ready!</div>
+      <div class="unlock-sub">Show this screen to the counter staff</div>
+    </div>
+  </div>` : `<div class="card" style="text-align:center;padding:24px">
+    <div style="font-size:36px;margin-bottom:8px">🎂</div>
+    <div style="font-size:15px;font-weight:500;color:var(--ink);margin-bottom:4px">Keep collecting!</div>
+    <div style="font-size:13px;color:var(--ink3)">${STAMPS-c.stamps%STAMPS} more stamp${STAMPS-c.stamps%STAMPS!==1?'s':''} until your next free cake</div>
+  </div>`;
+  let redeemBlock = '';
+  if (redeemEvents.length) {
+    const rows = redeemEvents.map((h,i) => `<div class="rh-row">
+      <div class="rh-left">
+        <span class="rh-ord">${ordinal(i+1)}</span>
+        <span class="rh-action">Free cake redeemed</span>
+      </div>
+      <div class="rh-date">${fmtFull(h.ts)}</div>
+    </div>`).join('');
+    redeemBlock = `<div class="redeem-history">
+      <div class="rh-head">
+        <div class="rh-title">Redemption history</div>
+        <div><div class="rh-count">${redeemEvents.length}</div><div class="rh-count-sub">redeemed</div></div>
+      </div>${rows}
+    </div>`;
+  }
+  area.innerHTML = pendingBanner + redeemBlock + (redeemEvents.length===0&&c.pendingFree===0 ? `<div class="empty" style="margin-top:8px">No rewards redeemed yet — keep collecting!</div>` : '');
+}
+
+function renderTabHistory(c, area) {
+  const hist = [...(c.history||[])].reverse();
+  if (!hist.length) { area.innerHTML = '<div class="empty">No visits yet — start collecting stamps!</div>'; return; }
+  const items = hist.slice(0,20).map((h,i) => {
+    const isLast = i===Math.min(hist.length,20)-1;
+    return `<div class="tl-item">
+      <div class="tl-dot-col">
+        <div class="tl-dot ${h.type==='free'?'free':'stamp'}">${h.type==='free'?'🎁':'🎂'}</div>
+        ${!isLast ? '<div class="tl-line"></div>' : ''}
+      </div>
+      <div class="tl-body">
+        <div class="tl-action">${h.type==='free'?'Free cake redeemed':'Stamp earned'}</div>
+        <div class="tl-time">${fmtFull(h.ts)}</div>
+      </div>
+    </div>`;
+  }).join('');
+  area.innerHTML = `<div class="timeline">
+    <div class="tl-header"><div class="tl-title">Visit history</div><span class="tl-count">${hist.length} visits</span></div>
+    ${items}
+  </div>`;
+}
+
+/* ── SHARE ───────────────────────────────────── */
+function copyProgress(id) {
+  const c = db.find(x=>x.id===id);
+  if (!c) return;
+  const cur = c.stamps % STAMPS;
+  const msg = `🎂 C for Cake — ${c.name}\n${cur}/${STAMPS} stamps collected\n${c.totalFree} free cake${c.totalFree!==1?'s':''} earned`;
+  navigator.clipboard.writeText(msg).catch(()=>{});
+  toast('Progress copied!');
+}
+function toggleQR(id) {
+  const box = document.getElementById('qr-box-'+id);
+  const render = document.getElementById('qr-render-'+id);
+  if (!box) return;
+  if (box.classList.contains('show')) { box.classList.remove('show'); return; }
+  box.classList.add('show');
+  if (!render.hasChildNodes()) {
+    const c = db.find(x=>x.id===id);
+    const cur = c ? c.stamps%STAMPS : 0;
+    const msg = `C for Cake Loyalty — ${c?c.name:'Member'}: ${cur}/${STAMPS} stamps. ${c?c.totalFree:0} free cakes earned.`;
+    try { new QRCode(render, { text:msg, width:150, height:150, colorDark:'#1A0D00', colorLight:'#FFFFFF', correctLevel:QRCode.CorrectLevel.M }); }
+    catch(e) { render.textContent = 'QR unavailable'; }
+  }
+}
+function printCard(id) {
+  const c = db.find(x=>x.id===id);
+  if (!c) return;
+  const cur = c.stamps%STAMPS, pct = Math.round(cur/STAMPS*100);
+  let dots = '';
+  for (let i=0;i<STAMPS;i++) {
+    const filled=i<cur,isGift=i===STAMPS-1;
+    const bc=filled?(isGift?'rgba(212,162,23,.9)':'rgba(224,90,28,.6)'):(isGift?'rgba(212,162,23,.3)':'rgba(255,255,255,.12)');
+    const bg=isGift&&filled?'rgba(212,162,23,.12)':'transparent';
+    const op=filled?1:0;
+    dots += `<div style="width:30px;height:30px;border-radius:50%;border:1.5px solid ${bc};background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <div style="width:19px;height:19px;border-radius:50%;border:2px solid rgba(224,90,28,.6);opacity:${op};display:flex;align-items:center;justify-content:center">
+        <div style="width:7px;height:7px;border-radius:50%;background:${isGift&&filled?'var(--gold)':'#E05A1C'}"></div>
+      </div></div>`;
+  }
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>C for Cake — ${c.name}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:#0F0A06;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}</style>
+  </head><body>
+  <div style="max-width:380px;width:100%">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#fff">C for Cake</div>
+      <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px">Loyalty Rewards</div>
+    </div>
+    <div style="border-radius:16px;background:linear-gradient(135deg,#1C0E06,#2D1A0C,#1C0E06);padding:22px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+      <div style="position:absolute;right:-14px;bottom:-42px;font-family:'Playfair Display',serif;font-size:190px;font-weight:700;color:rgba(255,255,255,.025);line-height:1">C</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;position:relative;z-index:1">
+        <div><div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:rgba(255,255,255,.88)">C for Cake</div><div style="font-size:7px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-top:4px">Loyalty Card</div></div>
+        <div style="text-align:right"><div style="font-size:7px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.28)">Member</div><div style="font-family:'Playfair Display',serif;font-size:14px;color:rgba(255,255,255,.8);margin-top:3px">${esc(c.name)}</div></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;position:relative;z-index:1;margin-bottom:16px">${dots}</div>
+      <div style="position:relative;z-index:1">
+        <div style="font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:5px">${cur} of ${STAMPS} stamps</div>
+        <div style="height:2px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:#E05A1C;border-radius:99px"></div></div>
+        <div style="margin-top:6px;font-size:10px;font-weight:500;color:${STAMPS-cur===0?'#D4A217':'rgba(255,255,255,.35)'}">${STAMPS-cur===0?'🎁 FREE CAKE UNLOCKED!':(STAMPS-cur)+' more stamps for a free cake'}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">
+      <div style="background:#1A1108;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff">${c.stamps}</div><div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:3px">Purchases</div></div>
+      <div style="background:#1A1108;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff">${c.totalFree}</div><div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:3px">Free cakes</div></div>
+      <div style="background:#1A1108;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff">${c.totalFree>0?c.totalFree:'—'}</div><div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:3px">Redeemed</div></div>
+    </div>
+    <div style="text-align:center;margin-top:14px;font-size:11px;color:rgba(255,255,255,.25)">Member since ${c.joined}</div>
+  </div></body></html>`;
+  const w = window.open('','_blank');
+  if (w) { w.document.write(html); w.document.close(); setTimeout(()=>w.print(),600); }
+}
+
+function openWAQuick(id) {
+  const c = db.find(x=>x.id===id);
+  if (!c) return;
+  const cur = c.stamps % STAMPS === 0 && c.stamps > 0 ? STAMPS : c.stamps % STAMPS;
+  const rem = STAMPS - cur;
+  const firstName = c.name.split(' ')[0];
+  let msg;
+  if (c.pendingFree > 0) {
+    msg = `Hi ${firstName}! 🎁\n\nJust a reminder — you have a *FREE CAKE* waiting for you at *C for Cake*! 🎂\n\nCome visit us and claim it at the counter anytime.\n\n— C for Cake 🍰`;
+  } else {
+    msg = `Hi ${firstName}! 🎂\n\nThank you for being a loyal *C for Cake* customer!\n\nYour card: ${cur}/${STAMPS} stamps collected. Just *${rem} more stamp${rem!==1?'s':''}* until your FREE cake! 🎁\n\nSee you soon!\n— C for Cake 🍰`;
+  }
+  const title = c.pendingFree > 0 ? '🎁 Remind About Free Cake' : '💬 Send Update';
+  openWAModal(c, title, msg);
+}
+
+/* ── WHATSAPP NOTIFICATION ───────────────────── */
+function openWAModal(c, title, msg) {
+  document.getElementById('wa-title').textContent = title;
+  document.getElementById('wa-preview-text').textContent = msg;
+  // Pre-fill phone if customer has one stored
+  const phoneInp = document.getElementById('wa-phone-inp');
+  phoneInp.value = c.phone || '';
+  // Store msg for dynamic link update
+  phoneInp.dataset.msg = encodeURIComponent(msg);
+  updateWALink();
+  phoneInp.oninput = updateWALink;
+  document.getElementById('wa-overlay').classList.add('show');
+}
+function updateWALink() {
+  const inp = document.getElementById('wa-phone-inp');
+  const phone = inp.value.replace(/[^\d+]/g,'');
+  const msg = inp.dataset.msg || '';
+  const link = document.getElementById('wa-send-link');
+  if (phone.length >= 7) {
+    link.href = `https://wa.me/${phone.replace('+','')}?text=${msg}`;
+    link.style.opacity = '1';
+    link.style.pointerEvents = 'auto';
+  } else {
+    link.href = '#';
+    link.style.opacity = '.45';
+    link.style.pointerEvents = 'none';
+  }
+}
+function closeWA() {
+  document.getElementById('wa-overlay').classList.remove('show');
+}
+function handleWAOverlayClick(e) {
+  if (e.target === document.getElementById('wa-overlay')) closeWA();
+}
+
+/* ── INIT ────────────────────────────────────── */
+if (!USE_SUPABASE) loadLocal();
+initSupabase();
+renderMerchant();
+</script>
+</body>
+</html>
