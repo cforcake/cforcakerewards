@@ -285,6 +285,8 @@ input:focus{border-color:var(--line3)}
 .btn-primary:hover{opacity:.88;color:#fff}
 .btn-stamp{background:var(--cake);color:#fff;border-color:var(--cake);font-size:12px;padding:9px 14px}
 .btn-stamp:hover{opacity:.88}
+.btn-unstamp{background:transparent;color:var(--ink3);border-color:var(--line2);font-size:12px;padding:9px 10px;min-width:36px}
+.btn-unstamp:hover{border-color:var(--line3);color:var(--ink2)}
 .btn-redeem{background:var(--green2);color:#4fbe87;border-color:rgba(45,122,82,.4);font-size:12px;padding:9px 14px}
 .btn-redeem:hover{background:rgba(45,122,82,.3)}
 
@@ -525,6 +527,7 @@ input:focus{border-color:var(--line3)}
 .cust-actions-row{
   margin-top:8px;padding-top:8px;
   border-top:1px solid var(--line);
+  display:flex;align-items:center;gap:8px;
 }
 .wa-quick-btn{
   display:inline-flex;align-items:center;gap:5px;
@@ -543,6 +546,52 @@ input:focus{border-color:var(--line3)}
   cursor:default !important;
   opacity:.55;
 }
+.btn-edit-cust{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:6px 11px;border-radius:var(--r3);
+  border:1px solid var(--line2);background:transparent;
+  color:var(--ink3);font-size:11px;font-weight:500;
+  cursor:pointer;font-family:'Inter',sans-serif;
+  transition:all .15s;margin-left:auto;
+}
+.btn-edit-cust:hover{border-color:var(--line3);color:var(--ink2);background:var(--bg3)}
+
+/* EDIT CUSTOMER MODAL */
+.edit-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);
+  backdrop-filter:blur(6px);z-index:700;
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.edit-overlay.show{opacity:1;pointer-events:all}
+.edit-sheet{
+  background:var(--bg2);border:1px solid var(--line2);
+  border-radius:var(--r) var(--r) 0 0;padding:24px 20px 36px;
+  width:100%;max-width:430px;
+  box-shadow:0 -8px 60px rgba(0,0,0,.7);
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+.edit-overlay.show .edit-sheet{transform:translateY(0)}
+.edit-handle{width:36px;height:3px;background:var(--line3);border-radius:99px;margin:0 auto 18px;opacity:.5}
+.edit-title{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:18px;text-align:center}
+.edit-field{margin-bottom:14px}
+.edit-label{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
+.edit-input{
+  width:100%;padding:11px 13px;border:1px solid var(--line2);border-radius:var(--r3);
+  font-size:14px;background:var(--bg3);color:var(--ink);
+  font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;box-sizing:border-box;
+}
+.edit-input:focus{border-color:var(--cake)}
+.edit-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px}
+.edit-btn{
+  padding:13px;border-radius:var(--r3);border:1px solid var(--line2);
+  background:var(--bg3);color:var(--ink2);font-size:13px;font-weight:500;
+  cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;
+}
+.edit-btn:hover{border-color:var(--line3);color:var(--ink)}
+.edit-btn:active{transform:scale(.97)}
+.edit-btn.primary{background:var(--cake);color:#fff;border-color:var(--cake);font-weight:600}
+.edit-btn.primary:hover{opacity:.88}
 </style>
 </head>
 <body>
@@ -608,7 +657,7 @@ input:focus{border-color:var(--line3)}
         <input type="text" id="inp-name" placeholder="Customer full name"/>
       </div>
       <div class="input-row">
-        <input type="tel" id="inp-phone" placeholder="Phone number (optional)"/>
+        <input type="tel" id="inp-phone" placeholder="10-digit phone (optional)" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"/>
         <button class="btn btn-primary" onclick="addCustomer()">Add</button>
       </div>
     </div>
@@ -693,6 +742,26 @@ input:focus{border-color:var(--line3)}
       <a class="wa-btn primary" id="wa-send-link" href="#" target="_blank" onclick="closeWA()">Send on WhatsApp →</a>
     </div>
     <div class="wa-note">Opens WhatsApp with the message pre-filled · One tap to send · 100% free</div>
+  </div>
+</div>
+
+<!-- EDIT CUSTOMER SHEET -->
+<div class="edit-overlay" id="edit-overlay" onclick="handleEditOverlayClick(event)">
+  <div class="edit-sheet">
+    <div class="edit-handle"></div>
+    <div class="edit-title">Edit Customer Details</div>
+    <div class="edit-field">
+      <div class="edit-label">Full Name</div>
+      <input class="edit-input" type="text" id="edit-inp-name" placeholder="Customer full name" autocomplete="off"/>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Phone Number <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--ink3)">(10 digits)</span></div>
+      <input class="edit-input" type="tel" id="edit-inp-phone" placeholder="10-digit mobile number" maxlength="10" autocomplete="off" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"/>
+    </div>
+    <div class="edit-btns">
+      <button class="edit-btn" onclick="closeEditCustomer()">Cancel</button>
+      <button class="edit-btn primary" onclick="saveEditCustomer()">Save Changes</button>
+    </div>
   </div>
 </div>
 
@@ -1046,11 +1115,14 @@ function renderCustomerList() {
   }
 
   // Apply search filter
-  const q = searchQuery.toLowerCase();
-  const list = q ? db.filter(c =>
-    c.name.toLowerCase().includes(q) ||
-    (c.phone && c.phone.replace(/\D/g,'').includes(q.replace(/\D/g,'')))
-  ) : db;
+  const q = searchQuery.toLowerCase().trim();
+  const qDigits = q.replace(/\D/g,'');
+  const list = q ? db.filter(c => {
+    const nameMatch = c.name.toLowerCase().includes(q);
+    const phoneMatch = c.phone && qDigits.length > 0 && c.phone.replace(/\D/g,'').includes(qDigits);
+    const phoneTextMatch = c.phone && c.phone.toLowerCase().includes(q);
+    return nameMatch || phoneMatch || phoneTextMatch;
+  }) : db;
 
   // Show count only when searching
   countEl.textContent = q
@@ -1090,6 +1162,7 @@ function renderCustomerList() {
         </div>
         <div class="cust-btns">
           ${hasFree ? `<button class="btn btn-redeem" onclick="redeemCake('${c.id}')">Redeem</button>` : ''}
+          ${c.stamps > 0 ? `<button class="btn btn-unstamp" onclick="removeStamp('${c.id}')" title="Remove last stamp">−</button>` : ''}
           <button class="btn btn-stamp" onclick="giveStamp('${c.id}')">+ Stamp</button>
         </div>
       </div>
@@ -1097,6 +1170,7 @@ function renderCustomerList() {
         <button class="wa-quick-btn ${c.phone ? '' : 'wa-quick-disabled'}" onclick="openWAQuick('${c.id}')" ${c.phone ? '' : 'title="No phone number saved"'}>
           <span>💬</span> WhatsApp${c.phone ? '' : ' (no number)'}
         </button>
+        <button class="btn-edit-cust" onclick="openEditCustomer('${c.id}')">✏ Edit</button>
       </div>${sig}
     </div>`;
   }).join('');
@@ -1105,8 +1179,9 @@ function renderCustomerList() {
 async function addCustomer() {
   const name = document.getElementById('inp-name').value.trim();
   if (!name) { toast('Enter a customer name'); return; }
-  const phone = document.getElementById('inp-phone').value.trim();
-  if (db.find(c => c.name.toLowerCase() === name.toLowerCase())) { toast('Customer already exists'); return; }
+  const phone = document.getElementById('inp-phone').value.trim().replace(/\D/g,'').slice(0,10);
+  if (phone && phone.length !== 10) { toast('Phone must be exactly 10 digits'); return; }
+  if (db.find(c => c.name.toLowerCase() === name.toLowerCase() && c.phone === phone)) { toast('Customer with same name and phone already exists'); return; }
   const newC = { id: uid(), name, phone, stamps:0, pendingFree:0, totalFree:0, joined:dateShort(), history:[] };
   db.push(newC);
   await saveDB(newC);
@@ -1141,6 +1216,26 @@ async function giveStamp(id) {
     msg = `Hi ${firstName}! 🎂\n\nYou just earned a new stamp at *C for Cake*!\n\nYour card: ${cur}/${STAMPS} stamps collected.\nJust *${rem} more stamp${rem!==1?'s':''}* until your FREE cake! 🎁\n\nThank you for your purchase — see you soon!\n— C for Cake 🍰`;
   }
   openWAModal(c, earnedFree ? '🎉 Free Cake Unlocked!' : '🎂 New Stamp Added', msg);
+}
+
+async function removeStamp(id) {
+  const c = db.find(x=>x.id===id);
+  if (!c || c.stamps <= 0) return;
+  // If last stamp completed a card, also roll back the free cake it granted
+  const wasOnCardStart = (c.stamps % STAMPS === 0);
+  if (wasOnCardStart && c.pendingFree > 0) {
+    c.pendingFree--;
+    c.totalFree--;
+  }
+  c.stamps--;
+  // Remove last stamp entry from history
+  const lastStampIdx = [...c.history].map((h,i)=>({h,i})).reverse().find(x=>x.h.type==='stamp');
+  if (lastStampIdx) c.history.splice(lastStampIdx.i, 1);
+  await saveDB(c);
+  renderMerchant();
+  const cur = c.stamps % STAMPS === 0 && c.stamps > 0 ? STAMPS : c.stamps % STAMPS;
+  toast('Stamp removed · ' + c.name + ' now has ' + cur + '/' + STAMPS);
+  if (!isMerchant && currentCustomer && currentCustomer.id === id) loadCard();
 }
 
 async function redeemCake(id) {
@@ -1382,6 +1477,45 @@ function openWAQuick(id) {
   }
   const title = c.pendingFree > 0 ? '🎁 Remind About Free Cake' : '💬 Send Update';
   openWAModal(c, title, msg);
+}
+
+/* ── EDIT CUSTOMER ───────────────────────────── */
+let editingCustomerId = null;
+
+function openEditCustomer(id) {
+  const c = db.find(x => x.id === id);
+  if (!c) return;
+  editingCustomerId = id;
+  document.getElementById('edit-inp-name').value = c.name;
+  document.getElementById('edit-inp-phone').value = c.phone ? c.phone.replace(/\D/g,'') : '';
+  document.getElementById('edit-overlay').classList.add('show');
+}
+
+function closeEditCustomer() {
+  document.getElementById('edit-overlay').classList.remove('show');
+  editingCustomerId = null;
+}
+
+function handleEditOverlayClick(e) {
+  if (e.target === document.getElementById('edit-overlay')) closeEditCustomer();
+}
+
+async function saveEditCustomer() {
+  const c = db.find(x => x.id === editingCustomerId);
+  if (!c) return;
+  const newName  = document.getElementById('edit-inp-name').value.trim();
+  const newPhone = document.getElementById('edit-inp-phone').value.trim().replace(/\D/g,'').slice(0,10);
+  if (!newName) { toast('Name cannot be empty'); return; }
+  if (newPhone && newPhone.length !== 10) { toast('Phone must be exactly 10 digits'); return; }
+  // Check exact duplicate (same name + same phone) with other customers
+  const conflict = db.find(x => x.id !== c.id && x.name.toLowerCase() === newName.toLowerCase() && x.phone === newPhone);
+  if (conflict) { toast('Another customer with same name and phone already exists'); return; }
+  c.name  = newName;
+  c.phone = newPhone;
+  await saveDB(c);
+  renderMerchant();
+  closeEditCustomer();
+  toast('Updated: ' + newName);
 }
 
 /* ── WHATSAPP NOTIFICATION ───────────────────── */
